@@ -14,30 +14,46 @@ class IntCode
         @inputs << input if !input.nil?
         while @status == :continue && @instructions[@pointer] != 99
             instruction = parse_instruction @instructions[@pointer]
-            input1 = parse_input instruction[:mode], 1
-            input2 = parse_input instruction[:mode], 2
+            dest1 = get_destination instruction[:mode], 1
+            dest2 = get_destination instruction[:mode], 2
+            dest3 = get_destination instruction[:mode], 3
 
             case instruction[:opcode]
             when 1
-                handle_one input1, input2, get_destination(instruction[:mode], 3)
+                @instructions[dest3] = @instructions[dest1] + @instructions[dest2]
+                @pointer += 4
             when 2
-                handle_two input1, input2, get_destination(instruction[:mode], 3)
+                @instructions[dest3] = @instructions[dest1] * @instructions[dest2]
+                @pointer += 4
             when 3
-                handle_three get_destination(instruction[:mode], 1)
+                @instructions[dest1] = @inputs.shift
+                @pointer += 2
             when 4 
-                handle_four input1
+                @result << @instructions[dest1]
+                @pointer += 2
             when 5
-                handle_five input1, input2
+                if !@instructions[dest1].zero?
+                    @pointer = @instructions[dest2]
+                else
+                    @pointer += 3
+                end
             when 6 
-                handle_six input1, input2
+                if @instructions[dest1].zero?
+                    @pointer = @instructions[dest2]
+                else
+                    @pointer += 3
+                end
             when 7
-                handle_seven input1, input2, get_destination(instruction[:mode], 3)
+                @instructions[dest3] = @instructions[dest1] < @instructions[dest2] ? 1 : 0
+                @pointer += 4
             when 8 
-                handle_eight input1, input2, get_destination(instruction[:mode], 3)
+                @instructions[dest3] = @instructions[dest1] == @instructions[dest2] ? 1 : 0
+                @pointer += 4
             when 9 
-                handle_nine input1 
+                @relative_base = @relative_base + @instructions[dest1]
+                @pointer = @pointer + 2
             else
-               raise(' ERROR : OP-Code not Valid ' + @instructions[@pointer].to_s) 
+                raise('OPCode not Valid :( ' + @instructions[@pointer].to_s) 
             break
             end
         end
@@ -50,24 +66,6 @@ class IntCode
     end
 
     private
-
-    def parse_input(modes, input)
-        sym = input == 1 ? :one : :two
-        case modes[sym]
-        when 0
-            #position mode
-            return @instructions[@instructions[@pointer + input]] || 0
-        when 1
-            #immediate mode
-            return @instructions[@pointer + input] || 0
-        when 2
-            #relative mode
-            return  @instructions[@relative_base + @instructions[@pointer + input]] || 0
-        else 
-            raise 'parse input error'
-            
-        end
-    end
 
     def get_destination(modes, input)
         sym = input == 1 ? :one : (input == 2 ? :two : :three)
@@ -86,59 +84,6 @@ class IntCode
             
         end
     end
-
-    def handle_one(input1, input2, destination)
-        @instructions[destination] = input1 + input2
-        @pointer = @pointer + 4
-    end
-
-    def handle_two(input1, input2, destination)
-        @instructions[destination] = input1 * input2
-        @pointer = @pointer + 4
-    end
-
-    def handle_three(destination)
-        @instructions[destination] = @inputs.shift
-        @pointer = @pointer + 2
-
-    end
-
-    def handle_four(input1)
-        @result << input1
-        @pointer = @pointer + 2
-    end
-
-    def handle_five(input1, input2)
-        if !input1.zero?
-            @pointer = input2
-        else
-            @pointer = @pointer + 3
-        end
-    end
-
-    def handle_six(input1, input2)
-        if input1.zero?
-            @pointer = input2
-        else
-            @pointer = @pointer + 3
-        end
-    end
-
-    def handle_seven(input1, input2, destination)
-        @instructions[destination] = input1 < input2 ? 1 : 0
-        @pointer = @pointer + 4
-    end
-
-    def handle_eight(input1, input2, destination)
-        @instructions[destination] = input1 == input2 ? 1 : 0
-        @pointer = @pointer + 4
-    end
-
-    def handle_nine(input1)
-        @relative_base = @relative_base + input1
-        @pointer = @pointer + 2
-    end
-
 
     def parse_instruction(instruction)
         instruction = instruction.to_s.rjust(5, '0')
