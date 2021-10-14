@@ -1,11 +1,7 @@
 require 'prime'
 
 input = File.read('10.txt').split(/\n/).map{|line| line.split('')}
-XLEN = input.size
-YLEN = input[0].size
-# input.each do |row|
-#     p row
-# end
+
 # Asteroids Coordinates
 asteroids = []
 input.each_with_index do |row, x|
