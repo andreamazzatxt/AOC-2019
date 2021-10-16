@@ -9,29 +9,52 @@ position = {
 class PaintingBot
     #           0       1       2      3
     FACINGS = [:up, :right, :down, :left].freeze
-    def initialize(program)
+    def initialize(program, starting_color = 0)
         @brain = IntCode.new(program)
         # 0: black 1: white
         @map = {
-            '0/0': 0
+            '0/0': starting_color
         }
         @facing = 0
         @current_pos = { 
             x: 0,
             y: 0
         }
-        @paint_counter = 0
     end
 
     def start
+
+        until @brain.halted?
         color = @map[position_to_s(@current_pos)]
-        output =  @brain.decode!(color)
-        return [@map, @paint_counter] if @brain.halted?
+        output = @brain.decode!(color)
         instruction = output[:result].last(2)
         paint(@current_pos, instruction[0])
-        move(instruction[1])
-        start()
+        move(instruction[1])    
+        end
+        return @map
     end
+
+    def paint_map
+        @map = @map.map do |coord, color|
+            coord = string_to_pos(coord)
+            coord[:y] += 5
+            [coord, color]
+        end
+        x_max = @map.max_by { |coord| coord[0][:x]}[0][:x]
+        y_max = @map.max_by { |coord| coord[0][:y]}[0][:y]
+        picture = []
+        @map.each do |panel|
+            coord = panel[0]
+            row = picture[panel[0][:y]] || []
+            row[panel[0][:x]] = panel[1].zero? ? ' ' : '#'
+            picture[panel[0][:y]] = row
+        end
+        picture.reverse.map do |line| 
+            puts line.join(' ')
+        end
+    end
+
+
     private
 
     def move(instruction)
@@ -62,8 +85,15 @@ class PaintingBot
         return "#{position[:x].to_s}/#{position[:y].to_s}".to_sym
     end
 
+    def string_to_pos(string)
+        coord = string.to_s.split('/').map{|val| val.to_i}
+        return { 
+            x: coord[0],
+            y: coord[1]
+        }
+    end
+
     def paint(coord, color)
-        @paint_counter += 1
         @map[position_to_s(coord)] = color 
     end
 
@@ -73,7 +103,14 @@ class PaintingBot
 
 end
 
-painter = PaintingBot.new(input)
+painter = PaintingBot.new(input,0)
 map = painter.start
- p 'Part One'
-p map[0].count
+p 'Part One'
+p map.count
+
+# part 2
+
+p 'Part Two: '
+painter2 = PaintingBot.new(input,1)
+painter2.start
+painter2.paint_map
