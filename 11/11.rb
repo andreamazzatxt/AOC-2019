@@ -1,10 +1,6 @@
 require_relative '../common/intcode'
 
 input = File.read('11.txt').split(',').map {|num| num.to_i}
-position = {
-    x: 0,
-    y: 0
-}
 
 class PaintingBot
     #           0       1       2      3
