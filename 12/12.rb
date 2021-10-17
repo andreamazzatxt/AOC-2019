@@ -44,6 +44,12 @@ class Moon
         potential_energy * kinetick_energy
     end
 
+    def to_hash(axis)
+        return "#{@x}_#{@vel_x}" if axis == :x
+        return "#{@y}_#{@vel_y}" if axis == :y
+        return "#{@z}_#{@vel_z}" if axis == :z
+    end
+
     def print
         p @name
         p "POSITION x: #{@x}, y: #{@y}, z: #{@z}"
@@ -56,9 +62,8 @@ class Simulation
     def initialize(input)
         @steps = 0
         @moons = []
-        input.each_with_index do |moon, index|
-            @moons << Moon.new(MOON_NAMES[index], moon)
-        end
+        @input = input
+        reset
     end
 
     def step
@@ -80,6 +85,21 @@ class Simulation
         end
     end
 
+    def find_steps_to_match
+        require 'set'
+        result = [:x, :y, :z].map do |axis|
+            reset
+            memory = Set.new
+            initial_status = simulation_to_hash axis
+            until memory.include?(initial_status)
+                step
+                memory.add(simulation_to_hash(axis))
+            end
+            @steps
+        end
+        return result.reduce(1, :lcm)
+    end
+
     def energy 
         @moons.map{|moon| moon.total_energy}.reduce(&:+)
     end
@@ -88,9 +108,27 @@ class Simulation
         puts "Steps taken : #{@steps}"
         @moons.each {|moon| moon.print}
     end
+    
+    def simulation_to_hash(axis)
+        return @moons.map{ |moon| moon.to_hash(axis)}.join('&')
+    end
+
+    def reset
+        @steps = 0
+        @moons = []
+        @input.each_with_index do |moon, index|
+            @moons << Moon.new(MOON_NAMES[index], moon)
+        end
+    end
 end
 
 simulation = Simulation.new(input)
 simulation.make_steps 1000
 puts 'Part One:'
 p simulation.energy
+
+
+puts 'Part Two:'
+simulation2 = Simulation.new(input)
+p simulation2.find_steps_to_match
+
